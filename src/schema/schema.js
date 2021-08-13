@@ -1,15 +1,21 @@
 const graphql = require('graphql');
 const _ = require('lodash');
 
-const { GraphQLObjectType, GraphQLString, GraphQLSchema, GraphQLID } = graphql;
+const {
+  GraphQLObjectType,
+  GraphQLString,
+  GraphQLSchema,
+  GraphQLID,
+  GraphQLList,
+} = graphql;
 
 //Dummy data
 
 const players = [
-  { id: '1', name: 'Scott McTominay', position: 'CDM' },
-  { id: '2', name: 'Bruno Fernandes', position: 'CAM' },
-  { id: '3', name: 'Jadon Sancho', position: 'RWM' },
-  { id: '4', name: 'Memphis', position: 'RWM' },
+  { id: '1', name: 'Scott McTominay', position: 'CDM', teamId: '1' },
+  { id: '2', name: 'Bruno Fernandes', position: 'CAM', teamId: '1' },
+  { id: '3', name: 'Jadon Sancho', position: 'RWM', teamId: '1' },
+  { id: '4', name: 'Memphis', position: 'RWM', teamId: '2' },
 ];
 
 const teams = [
@@ -24,6 +30,12 @@ const PlayerType = new GraphQLObjectType({
     id: { type: GraphQLID },
     name: { type: GraphQLString },
     position: { type: GraphQLString },
+    team: {
+      type: TeamType,
+      resolve(parent, args) {
+        return _.find(teams, { id: parent.teamId });
+      },
+    },
   }),
 });
 
@@ -33,6 +45,12 @@ const TeamType = new GraphQLObjectType({
     id: { type: GraphQLID },
     name: { type: GraphQLString },
     country: { type: GraphQLString },
+    players: {
+      type: new GraphQLList(PlayerType),
+      resolve(parent, args) {
+        return _.filter(players, { teamId: parent.id });
+      },
+    },
   }),
 });
 
@@ -51,6 +69,18 @@ const RootQuery = new GraphQLObjectType({
       args: { id: { type: GraphQLID } },
       resolve(parent, args) {
         return _.find(teams, { id: args.id });
+      },
+    },
+    players: {
+      type: new GraphQLList(PlayerType),
+      resolve(parent, args) {
+        return players;
+      },
+    },
+    teams: {
+      type: new GraphQLList(TeamType),
+      resolve(parent, args) {
+        return teams;
       },
     },
   },
