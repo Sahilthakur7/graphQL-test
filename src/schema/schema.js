@@ -1,5 +1,7 @@
 const graphql = require('graphql');
 const _ = require('lodash');
+const Player = require('../models/player');
+const Team = require('../models/team');
 
 const {
   GraphQLObjectType,
