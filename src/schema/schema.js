@@ -9,22 +9,8 @@ const {
   GraphQLSchema,
   GraphQLID,
   GraphQLList,
+  GraphQLNonNull,
 } = graphql;
-
-//Dummy data
-
-const players = [
-  { id: '1', name: 'Scott McTominay', position: 'CDM', teamId: '1' },
-  { id: '2', name: 'Bruno Fernandes', position: 'CAM', teamId: '1' },
-  { id: '3', name: 'Jadon Sancho', position: 'RWM', teamId: '1' },
-  { id: '4', name: 'Memphis', position: 'RWM', teamId: '2' },
-];
-
-const teams = [
-  { id: '1', name: 'Man Utd', country: 'England' },
-  { id: '2', name: 'Barcelona', country: 'Spain' },
-  { id: '3', name: 'Schalke', country: 'Germany' },
-];
 
 const PlayerType = new GraphQLObjectType({
   name: 'Player',
@@ -35,7 +21,7 @@ const PlayerType = new GraphQLObjectType({
     team: {
       type: TeamType,
       resolve(parent, args) {
-        return _.find(teams, { id: parent.teamId });
+        return Team.findById(parent.teamId);
       },
     },
   }),
@@ -50,7 +36,7 @@ const TeamType = new GraphQLObjectType({
     players: {
       type: new GraphQLList(PlayerType),
       resolve(parent, args) {
-        return _.filter(players, { teamId: parent.id });
+        return Player.find({ teamId: args.id });
       },
     },
   }),
@@ -63,26 +49,64 @@ const RootQuery = new GraphQLObjectType({
       type: PlayerType,
       args: { id: { type: GraphQLID } },
       resolve(parent, args) {
-        return _.find(players, { id: args.id });
+        return Player.findById(args.id);
       },
     },
     team: {
       type: TeamType,
       args: { id: { type: GraphQLID } },
       resolve(parent, args) {
-        return _.find(teams, { id: args.id });
+        return Team.findById(args.id);
       },
     },
     players: {
       type: new GraphQLList(PlayerType),
       resolve(parent, args) {
-        return players;
+        return Player.find({}).limit(10);
       },
     },
     teams: {
       type: new GraphQLList(TeamType),
       resolve(parent, args) {
-        return teams;
+        return Team.find({}).limit(10);
+      },
+    },
+  },
+});
+
+const Mutation = new GraphQLObjectType({
+  name: 'Mutation',
+  fields: {
+    addPlayer: {
+      type: PlayerType,
+      args: {
+        name: { type: new GraphQLNonNull(GraphQLString) },
+        position: { type: new GraphQLNonNull(GraphQLString) },
+        teamId: { type: new GraphQLNonNull(GraphQLID) },
+      },
+      resolve(parent, args) {
+        let player = new Player({
+          name: args.name,
+          position: args.position,
+          teamId: args.teamId,
+        });
+
+        return player.save();
+      },
+    },
+    addTeam: {
+      type: TeamType,
+      args: {
+        name: { type: new GraphQLNonNull(GraphQLString) },
+        country: { type: new GraphQLNonNull(GraphQLString) },
+      },
+      resolve(parent, args) {
+        let team = new Team({
+          name: args.name,
+          country: args.country,
+        });
+
+        return team.save();
       },
     },
   },
@@ -90,4 +114,5 @@ const RootQuery = new GraphQLObjectType({
 
 module.exports = new GraphQLSchema({
   query: RootQuery,
+  mutation: Mutation,
 });
